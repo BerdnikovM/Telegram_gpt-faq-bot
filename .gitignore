@@ -1,0 +1,57 @@
+# Виртуальное окружение
+venv/
+.env
+
+# Python кэш
+__pycache__/
+*.py[cod]
+*$py.class
+
+# SQL/SQLite
+*.sqlite3
+*.db
+
+# IDE/Editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Docker артефакты (если будут)
+*.pid
+*.seed
+*.bak
+
+# Jupyter
+.ipynb_checkpoints
+
+# Byte-compiled / optimized / DLL files
+*.so
+*.dll
+*.dylib
+
+# Distribution / packaging
+build/
+dist/
+.eggs/
+*.egg-info/
+*.egg
+MANIFEST
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+*.cover
+coverage.xml
+.cache
+.pytest_cache/
+
+# MyPy / Pyre / Pytype
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
