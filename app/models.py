@@ -1,6 +1,6 @@
 from sqlmodel import SQLModel, Field, Column, ForeignKey
-from sqlalchemy import Text, DateTime, Integer, String, Float
-from datetime import datetime
+from sqlalchemy import Text, DateTime, Integer, String, Float, DateTime
+from datetime import datetime, UTC
 from typing import Optional
 
 
@@ -10,7 +10,7 @@ class User(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     tg_id: int = Field(index=True, unique=True, nullable=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True), nullable=False))
 
 
 # === FAQ Entries ===
@@ -21,8 +21,8 @@ class FAQEntry(SQLModel, table=True):
     question: str = Field(sa_column=Column(Text, nullable=False))
     answer: str = Field(sa_column=Column(Text, nullable=False))
     popularity: int = Field(default=0, nullable=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
-    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True), nullable=False))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True), nullable=False))
 
 
 # === Unanswered Questions ===
@@ -33,7 +33,7 @@ class UnansweredQuestion(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id", nullable=False)
     question_text: str = Field(sa_column=Column(Text, nullable=False))
     similar_score: Optional[float] = Field(default=None)
-    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True), nullable=False))
 
 
 # === GPT Cache ===
@@ -43,7 +43,7 @@ class GPTCache(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     qhash: str = Field(sa_column=Column(String(64), unique=True, index=True, nullable=False))
     answer: str = Field(sa_column=Column(Text, nullable=False))
-    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True), nullable=False))
     hits: int = Field(default=0, nullable=False)
 
 
@@ -53,7 +53,7 @@ class UsageLimit(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id", nullable=False)
-    window_start: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    window_start: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True), nullable=False))
     count: int = Field(default=0, nullable=False)
 
 
