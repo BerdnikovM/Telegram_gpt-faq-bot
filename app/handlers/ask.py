@@ -2,6 +2,8 @@ from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
+from app.services.faq_service import get_answer_from_faq
+from app.db import async_session_maker
 
 router = Router()
 
@@ -56,14 +58,15 @@ async def handle_free_text(message: Message, state: FSMContext):
 
     user_id = message.from_user.id
 
-    # Заглушка для FAQ-сервиса
-    # Позже заменим вызовом: answer = await faq_service.get_answer(user_id, text)
-    answer = (
-        "🤔 Я получил ваш вопрос, но пока у меня включена заглушка.\n"
-        "Скоро здесь будет поиск по базе и подключение GPT ✨"
-    )
+    async with async_session_maker() as session:
+        answer, ctx = await get_answer_from_faq(session, user_id, text)
 
-    await message.answer(answer)
+    if answer:
+        await message.answer(f"💡 {answer}")
+    else:
+        # Если уверенного совпадения нет → пока отвечаем так
+        await message.answer("❓ Я не нашёл точного ответа. Скоро здесь будет GPT ✨")
 
     # Возвращаем пользователя в "обычный режим"
     await state.clear()
+
