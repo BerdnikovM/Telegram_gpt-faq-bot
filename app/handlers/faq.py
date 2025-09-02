@@ -1,10 +1,9 @@
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
-from sqlalchemy import select, func, desc
 from app.db import async_session_maker
-from app.models import FAQEntry
 from app.keyboards.faq_inline import faq_list_kb
 from app.config import TOP_N_FAQ
+from app.repositories import faq_repo
 
 router = Router()
 
@@ -13,24 +12,19 @@ router = Router()
 @router.message(F.text == "📋 FAQ")
 async def show_faq_list(message: Message):
     async with async_session_maker() as session:
-        # Считаем количество вопросов всего
-        total_count = await session.scalar(select(func.count()).select_from(FAQEntry))
+        # Считаем общее количество FAQ
+        total_count = len(await faq_repo.all_for_search(session))
 
         # Берём первую страницу (offset=0)
-        result = await session.execute(
-            select(FAQEntry.id, FAQEntry.question)
-            .order_by(desc(FAQEntry.popularity), FAQEntry.id)
-            .limit(TOP_N_FAQ)
-            .offset(0)
-        )
-        faq_items = result.all()
+        faq_items = await faq_repo.top_faq(session, TOP_N_FAQ, offset=0)
 
     if not faq_items:
         await message.answer("❌ В базе пока нет FAQ.")
         return
 
-    # Если вопросов больше чем TOP_N_FAQ → добавляем кнопку «Далее»
     kb = faq_list_kb(faq_items)
+
+    # Добавляем кнопку "Далее", если есть больше вопросов
     if total_count > TOP_N_FAQ:
         from aiogram.types import InlineKeyboardButton
         kb.inline_keyboard.append([
@@ -46,39 +40,27 @@ async def faq_answer(callback: CallbackQuery):
     faq_id = int(callback.data.split(":")[1])
 
     async with async_session_maker() as session:
-        result = await session.execute(
-            select(FAQEntry).where(FAQEntry.id == faq_id)
-        )
-        faq_entry = result.scalar_one_or_none()
-
+        faq_entry = await faq_repo.get_by_id(session, faq_id)
         if not faq_entry:
             await callback.answer("❌ Вопрос не найден", show_alert=True)
             return
 
-        # Увеличиваем счётчик популярности
-        faq_entry.popularity += 1
-        await session.commit()
+        # Увеличиваем популярность
+        await faq_repo.inc_popularity(session, faq_id)
 
     await callback.message.answer(f"💡 {faq_entry.answer}")
-    await callback.answer()  # убираем «часики»
+    await callback.answer()
 
 
-# === Хендлер пагинации (следующая страница) ===
+# === Хендлер пагинации (следующая/предыдущая страница) ===
 @router.callback_query(F.data.startswith("faq:page:"))
 async def faq_pagination(callback: CallbackQuery):
     page = int(callback.data.split(":")[2])
     offset = page * TOP_N_FAQ
 
     async with async_session_maker() as session:
-        total_count = await session.scalar(select(func.count()).select_from(FAQEntry))
-
-        result = await session.execute(
-            select(FAQEntry.id, FAQEntry.question)
-            .order_by(desc(FAQEntry.popularity), FAQEntry.id)
-            .limit(TOP_N_FAQ)
-            .offset(offset)
-        )
-        faq_items = result.all()
+        total_count = len(await faq_repo.all_for_search(session))
+        faq_items = await faq_repo.top_faq(session, TOP_N_FAQ, offset=offset)
 
     if not faq_items:
         await callback.answer("⚠️ Больше вопросов нет", show_alert=True)
@@ -86,7 +68,6 @@ async def faq_pagination(callback: CallbackQuery):
 
     kb = faq_list_kb(faq_items)
 
-    # Если есть предыдущая страница — добавим «Назад»
     from aiogram.types import InlineKeyboardButton
     nav_row = []
     if page > 0:
@@ -96,6 +77,5 @@ async def faq_pagination(callback: CallbackQuery):
     if nav_row:
         kb.inline_keyboard.append(nav_row)
 
-    # Редактируем предыдущее сообщение, а не отправляем новое
     await callback.message.edit_text("📋 Часто задаваемые вопросы:", reply_markup=kb)
     await callback.answer()
