@@ -1,10 +1,10 @@
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta
 from typing import Optional
 
 from app.models import GPTCache
-
+from app.config import CACHE_TTL_HOURS
 
 async def get_by_hash(session: AsyncSession, qhash: str) -> Optional[GPTCache]:
     """
@@ -41,3 +41,16 @@ async def upsert(session: AsyncSession, qhash: str, answer: str, fresh: bool = F
     await session.commit()
     await session.refresh(entry)
     return entry
+
+async def cleanup_expired_cache(session: AsyncSession) -> int:
+    """
+    Удаляет кэшированные ответы старше CACHE_TTL_HOURS.
+    Возвращает количество удалённых записей.
+    """
+    cutoff = datetime.now(UTC) - timedelta(hours=CACHE_TTL_HOURS)
+    result = await session.execute(
+        delete(GPTCache).where(GPTCache.created_at < cutoff)
+    )
+    deleted = result.rowcount or 0
+    await session.commit()
+    return deleted

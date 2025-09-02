@@ -8,6 +8,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from app.config import BOT_TOKEN
 from app.handlers import start, faq, ask, admin
+from app.scheduler import setup_scheduler
 
 # Включаем логи
 logging.basicConfig(level=logging.INFO)
@@ -30,6 +31,9 @@ async def main():
     dp.include_router(faq.router)
     dp.include_router(ask.router)
     dp.include_router(admin.router)
+
+    # Запускаем шедулер
+    setup_scheduler()
 
     logger.info("🚀 Бот запущен")
     await dp.start_polling(bot)
