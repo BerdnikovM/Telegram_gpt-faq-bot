@@ -14,8 +14,10 @@ async def create_faq(session: AsyncSession, question: str, answer: str) -> FAQEn
     return entry
 
 
-async def get_by_id(session: AsyncSession, faq_id: int) -> Optional[FAQEntry]:
-    result = await session.execute(select(FAQEntry).where(FAQEntry.id == faq_id))
+async def get_by_id(session: AsyncSession, faq_id: int) -> FAQEntry | None:
+    result = await session.execute(
+        select(FAQEntry).where(FAQEntry.id == faq_id)
+    )
     return result.scalar_one_or_none()
 
 
@@ -54,11 +56,7 @@ async def inc_popularity(session: AsyncSession, faq_id: int) -> None:
         await session.commit()
 
 
-# === Данные для поиска (exact/fuzzy) ===
-async def all_for_search(session: AsyncSession) -> list[tuple[int, str, str]]:
-    """
-    Возвращает список (id, question, answer) для всех FAQ.
-    Используется при exact/fuzzy поиске.
-    """
-    result = await session.execute(select(FAQEntry.id, FAQEntry.question, FAQEntry.answer))
-    return result.all()
+async def all_for_search(session: AsyncSession) -> list[FAQEntry]:
+    result = await session.execute(select(FAQEntry))
+    return result.scalars().all()
+

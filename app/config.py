@@ -9,8 +9,9 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./db.sqlite3")
 
 # === LLM провайдер ===
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "yandex")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+YANDEX_CATALOG_ID = os.getenv("YANDEX_CATALOG_ID")
 YANDEX_API_KEY = os.getenv("YANDEX_API_KEY")
 
 # === Кэш и лимиты ===
