@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: gpt-faq-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-gptfaq}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  init_db:
+    build: .
+    command: python -m app.init_db
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    restart: "no"
+
+  bot:
+    build: .
+    container_name: gpt-faq-bot
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - init_db
+
+volumes:
+  postgres_data:
